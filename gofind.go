@@ -13,6 +13,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -55,28 +56,32 @@ func main() {
 			fmt.Println(line)
 			continue
 		}
-		printPackage(parse(line))
+		PackageFrom(line).WriteTo(os.Stdout)
 	}
 	if err := scanner.Err(); err != nil {
 		exitError(err)
 	}
 }
 
-func parse(line string) (name, desc string) {
+type Package struct {
+	Path, Synopsis string
+}
+
+func PackageFrom(line string) (pkg Package) {
 	s := strings.SplitAfterN(line, " ", 2)
 	if len(s) > 0 {
-		name = s[0]
+		pkg.Path = s[0]
 	}
 	if len(s) > 1 {
-		desc = s[1]
+		pkg.Synopsis = s[1]
 	}
 	return
 }
 
-func printPackage(name, desc string) {
-	fmt.Println(name)
-	if desc != "" {
-		fmt.Println("   ", desc)
+func (pkg Package) WriteTo(w io.Writer) {
+	fmt.Fprintln(w, pkg.Path)
+	if pkg.Synopsis != "" {
+		fmt.Fprintln(w, "   ", pkg.Synopsis)
 	}
 }
 
