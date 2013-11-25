@@ -13,6 +13,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"go/doc"
 	"io"
 	"net/http"
 	"net/url"
@@ -78,11 +79,14 @@ func PackageFrom(line string) (pkg Package) {
 	return
 }
 
+const indent = "    "
+
 func (pkg Package) WriteTo(w io.Writer) {
 	fmt.Fprintln(w, pkg.Path)
 	if pkg.Synopsis != "" {
-		fmt.Fprintln(w, "   ", pkg.Synopsis)
+		doc.ToText(w, pkg.Synopsis, "    ", "", 80)
 	}
+	fmt.Println()
 }
 
 func exitError(err error) {
