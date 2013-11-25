@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Command gofind searches for packages via godoc.org.
+// Command gofind searches for Go packages via godoc.org.
 //
 // Usage:
 //         gofind <query> ...
@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-const help = `Find packages via godoc.org.
+const help = `Find Go packages via godoc.org.
 Usage: gofind <query> ...`
 
 func main() {
