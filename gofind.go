@@ -5,7 +5,7 @@
 // Command gofind searches for Go packages via godoc.org.
 //
 // Usage:
-//         gofind <query> ...
+//         gofind [<flag> ...] <query> ...
 //
 package main
 
@@ -20,11 +20,14 @@ import (
 )
 
 const help = `Find Go packages via godoc.org.
-Usage: gofind <query> ...`
+Usage: gofind [<flag> ...] <query> ...`
+
+var raw = flag.Bool("raw", false, "don't apply any formatting if true")
 
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, help)
+		flag.PrintDefaults()
 	}
 	flag.Parse()
 
@@ -47,15 +50,20 @@ func main() {
 
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
-		printPackage(parseLine(scanner.Text()))
+		line := scanner.Text()
+		if *raw {
+			fmt.Println(line)
+			continue
+		}
+		printPackage(parse(line))
 	}
 	if err := scanner.Err(); err != nil {
 		exitError(err)
 	}
 }
 
-func parseLine(l string) (name, desc string) {
-	s := strings.SplitAfterN(l, " ", 2)
+func parse(line string) (name, desc string) {
+	s := strings.SplitAfterN(line, " ", 2)
 	if len(s) > 0 {
 		name = s[0]
 	}
