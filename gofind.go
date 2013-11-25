@@ -79,12 +79,15 @@ func PackageFrom(line string) (pkg Package) {
 	return
 }
 
-const indent = "    "
+const (
+	punchCardWidth = 80
+	indent         = "    "
+)
 
 func (pkg Package) WriteTo(w io.Writer) {
 	fmt.Fprintln(w, pkg.Path)
 	if pkg.Synopsis != "" {
-		doc.ToText(w, pkg.Synopsis, "    ", "", 80)
+		doc.ToText(w, pkg.Synopsis, indent, "", punchCardWidth-2*len(indent))
 	}
 	fmt.Println()
 }
