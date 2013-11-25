@@ -1,0 +1,7 @@
+Gofind searches for Go packages via godoc.org.
+
+To install, run
+  go get github.com/fzipp/gofind
+
+Usage:
+  gofind <query> ...
