@@ -33,6 +33,10 @@ func main() {
 	}
 	flag.Parse()
 
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(0)
+	}
 	query := strings.Join(flag.Args(), " ")
 
 	v := url.Values{}
