@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Command gofind searches for Go packages via godoc.org.
+// Gofind searches for Go packages via godoc.org.
 //
 // Usage:
-//         gofind [<flag> ...] <query> ...
+//      gofind [<flag> ...] <query> ...
 //
+// Flags
+//      -raw   don't apply any formatting if set
 package main
 
 import (
@@ -21,21 +23,27 @@ import (
 	"strings"
 )
 
-const help = `Find Go packages via godoc.org.
-Usage: gofind [<flag> ...] <query> ...`
+func usage() {
+	fmt.Fprintf(os.Stderr, usageDoc)
+	os.Exit(2)
+}
 
-var raw = flag.Bool("raw", false, "don't apply any formatting if true")
+const usageDoc = `Find Go packages via godoc.org.
+usage:
+        gofind [<flag> ...] <query> ...
+
+Flags
+        -raw   don't apply any formatting if set
+`
+
+var raw = flag.Bool("raw", false, "don't apply any formatting")
 
 func main() {
-	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, help)
-		flag.PrintDefaults()
-	}
+	flag.Usage = usage
 	flag.Parse()
 
 	if flag.NArg() == 0 {
-		flag.Usage()
-		os.Exit(0)
+		usage()
 	}
 	query := strings.Join(flag.Args(), " ")
 
@@ -61,7 +69,7 @@ func main() {
 			fmt.Println(line)
 			continue
 		}
-		PackageFrom(line).WriteTo(os.Stdout)
+		packageFrom(line).writeTo(os.Stdout)
 	}
 	if err := scanner.Err(); err != nil {
 		exitError(err)
@@ -69,16 +77,16 @@ func main() {
 }
 
 type Package struct {
-	Path, Synopsis string
+	path, synopsis string
 }
 
-func PackageFrom(line string) (pkg Package) {
+func packageFrom(line string) (pkg Package) {
 	s := strings.SplitAfterN(line, " ", 2)
 	if len(s) > 0 {
-		pkg.Path = s[0]
+		pkg.path = s[0]
 	}
 	if len(s) > 1 {
-		pkg.Synopsis = s[1]
+		pkg.synopsis = s[1]
 	}
 	return
 }
@@ -88,12 +96,12 @@ const (
 	indent         = "    "
 )
 
-func (pkg Package) WriteTo(w io.Writer) {
-	fmt.Fprintln(w, pkg.Path)
-	if pkg.Synopsis != "" {
-		doc.ToText(w, pkg.Synopsis, indent, "", punchCardWidth-2*len(indent))
+func (pkg Package) writeTo(w io.Writer) {
+	fmt.Fprintln(w, pkg.path)
+	if pkg.synopsis != "" {
+		doc.ToText(w, pkg.synopsis, indent, "", punchCardWidth-2*len(indent))
 	}
-	fmt.Println()
+	fmt.Fprintln(w)
 }
 
 func exitError(err error) {
