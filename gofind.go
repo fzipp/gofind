@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Gofind searches for Go packages via godoc.org.
+// Gofind searches for Go packages via pkg.go.dev.
 //
 // Usage:
 //      gofind [<flag> ...] <query> ...
@@ -12,7 +12,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"go/doc"
@@ -21,14 +20,16 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, usageDoc)
+	_, _ = fmt.Fprintf(os.Stderr, usageDoc)
 	os.Exit(2)
 }
 
-const usageDoc = `Find Go packages via godoc.org.
+const usageDoc = `Find Go packages via pkg.go.dev.
 usage:
         gofind [<flag> ...] <query> ...
 
@@ -45,50 +46,59 @@ func main() {
 	if flag.NArg() == 0 {
 		usage()
 	}
-	query := strings.Join(flag.Args(), " ")
 
+	query := strings.Join(flag.Args(), " ")
+	modules, err := search(query)
+	check(err)
+	for _, mod := range modules {
+		err = mod.writeTo(os.Stdout)
+		check(err)
+	}
+}
+
+func search(query string) ([]searchResult, error) {
 	v := url.Values{}
 	v.Set("q", query)
-	req, err := http.NewRequest("GET", "http://godoc.org/?"+v.Encode(), nil)
+	req, err := http.NewRequest("GET", "https://pkg.go.dev/search?"+v.Encode(), nil)
 	if err != nil {
-		exitError(err)
+		return nil, err
 	}
-	req.Header.Add("Accept", "text/plain")
+	req.Header.Add("Accept", "text/html")
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
-		exitError(err)
+		return nil, err
 	}
-	defer resp.Body.Close()
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP status code error: %d %s", res.StatusCode, res.Status)
+	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := scanner.Text()
+	htmlDoc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []searchResult
+	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
+		moduleName := strings.TrimSpace(s.Find(".SearchSnippet-header").Text())
+		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
 		if *raw {
-			fmt.Println(line)
-			continue
+			fmt.Println(moduleName + "\t" + synopsis)
+			return
 		}
-		packageFrom(line).writeTo(os.Stdout)
-	}
-	if err := scanner.Err(); err != nil {
-		exitError(err)
-	}
+		results = append(results, searchResult{
+			moduleName: moduleName,
+			synopsis:   synopsis,
+		})
+	})
+	return results, nil
 }
 
-type Package struct {
-	path, synopsis string
-}
-
-func packageFrom(line string) (pkg Package) {
-	s := strings.SplitAfterN(line, " ", 2)
-	if len(s) > 0 {
-		pkg.path = s[0]
-	}
-	if len(s) > 1 {
-		pkg.synopsis = s[1]
-	}
-	return
+type searchResult struct {
+	moduleName string
+	synopsis   string
 }
 
 const (
@@ -96,15 +106,25 @@ const (
 	indent         = "    "
 )
 
-func (pkg Package) writeTo(w io.Writer) {
-	fmt.Fprintln(w, pkg.path)
-	if pkg.synopsis != "" {
-		doc.ToText(w, pkg.synopsis, indent, "", punchCardWidth-2*len(indent))
+func (r searchResult) writeTo(w io.Writer) error {
+	_, err := fmt.Fprintln(w, r.moduleName)
+	if err != nil {
+		return err
 	}
-	fmt.Fprintln(w)
+	if r.synopsis != "" {
+		doc.ToText(w, r.synopsis, indent, "", punchCardWidth-2*len(indent))
+	}
+	_, err = fmt.Fprintln(w)
+	return err
 }
 
-func exitError(err error) {
-	fmt.Fprintln(os.Stderr, err)
+func check(err error) {
+	if err != nil {
+		fail(err)
+	}
+}
+
+func fail(msg ...interface{}) {
+	_, _ = fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }

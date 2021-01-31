@@ -1,4 +1,4 @@
-Gofind searches for Go packages via godoc.org.
+Gofind searches for Go modules via pkg.go.dev.
 
 To install, run
 
