@@ -53,8 +53,6 @@ func main() {
 		}
 	}
 	query := strings.Join(args, " ")
-	fmt.Println(query)
-	return
 
 	run(query, *rawFlag)
 }
