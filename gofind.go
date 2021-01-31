@@ -37,22 +37,29 @@ Flags
         -raw   don't apply any formatting if set
 `
 
-var raw = flag.Bool("raw", false, "don't apply any formatting")
-
 func main() {
+	rawFlag := flag.Bool("raw", false, "don't apply any formatting")
+
 	flag.Usage = usage
 	flag.Parse()
 
 	if flag.NArg() == 0 {
 		usage()
 	}
-
 	query := strings.Join(flag.Args(), " ")
+
+	run(query, *rawFlag)
+}
+
+func run(query string, raw bool) {
 	modules, err := search(query)
 	check(err)
 	for _, mod := range modules {
-		err = mod.writeTo(os.Stdout)
-		check(err)
+		if raw {
+			fmt.Println(mod.moduleName + "\t" + mod.synopsis + "\t" + mod.info)
+			continue
+		}
+		check(mod.writeTo(os.Stdout))
 	}
 }
 
@@ -84,21 +91,33 @@ func search(query string) ([]searchResult, error) {
 	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
 		moduleName := strings.TrimSpace(s.Find(".SearchSnippet-header").Text())
 		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
-		if *raw {
-			fmt.Println(moduleName + "\t" + synopsis)
-			return
-		}
+		info := formatInfo(s.Find(".SearchSnippet-infoLabel").Text())
 		results = append(results, searchResult{
 			moduleName: moduleName,
 			synopsis:   synopsis,
+			info:       info,
 		})
 	})
 	return results, nil
 }
 
+func formatInfo(info string) string {
+	var parts []string
+	for _, p := range strings.Split(info, "|") {
+		s := strings.SplitN(p, ":", 2)
+		if len(s) > 1 {
+			label := strings.TrimSpace(s[0])
+			value := strings.TrimSpace(s[1])
+			parts = append(parts, label+": "+value)
+		}
+	}
+	return strings.Join(parts, " | ")
+}
+
 type searchResult struct {
 	moduleName string
 	synopsis   string
+	info       string
 }
 
 const (
@@ -106,14 +125,16 @@ const (
 	indent         = "    "
 )
 
-func (r searchResult) writeTo(w io.Writer) error {
-	_, err := fmt.Fprintln(w, r.moduleName)
+func (s searchResult) writeTo(w io.Writer) error {
+	_, err := fmt.Fprintln(w, s.moduleName)
 	if err != nil {
 		return err
 	}
-	if r.synopsis != "" {
-		doc.ToText(w, r.synopsis, indent, "", punchCardWidth-2*len(indent))
+	if s.synopsis != "" {
+		doc.ToText(w, s.synopsis, indent, "", punchCardWidth-2*len(indent))
 	}
+	_, err = fmt.Fprintln(w)
+	_, err = fmt.Fprintln(w, indent+s.info)
 	_, err = fmt.Fprintln(w)
 	return err
 }
