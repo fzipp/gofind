@@ -14,7 +14,7 @@ go get github.com/fzipp/gofind
 gofind [<flag> ...] <query> ...
 ```
 
-## Example
+## Examples
 
 Search for packages providing logging functionality:
 
@@ -38,6 +38,26 @@ github.com/ethereum/go-ethereum/log
     Version: v1.9.25 | Published: Dec 11, 2020 | Imported by: 8625 | Licenses: Apache-2.0, GPL-3.0
 ...
 ```
+
+Search for multiple terms:
+
+```
+$ gofind go cloud
+```
+
+Search for an exact match:
+
+```
+$ gofind "go cloud"
+```
+
+Combine searches:
+
+```
+$ gofind yaml OR json
+```
+
+### Tip
 
 In case you want automatic paging if the output doesn't fit on one screen,
 you can add the following function to your shell profile
