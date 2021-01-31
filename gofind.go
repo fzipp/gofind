@@ -46,7 +46,15 @@ func main() {
 	if flag.NArg() == 0 {
 		usage()
 	}
-	query := strings.Join(flag.Args(), " ")
+	args := flag.Args()
+	for i, arg := range args {
+		if strings.Contains(arg, " ") {
+			args[i] = `"` + arg + `"`
+		}
+	}
+	query := strings.Join(args, " ")
+	fmt.Println(query)
+	return
 
 	run(query, *rawFlag)
 }
