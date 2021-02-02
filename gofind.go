@@ -187,6 +187,6 @@ func check(err error) {
 }
 
 func fail(msg ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, msg)
+	_, _ = fmt.Fprintln(os.Stderr, msg...)
 	os.Exit(1)
 }
