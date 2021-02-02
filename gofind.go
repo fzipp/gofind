@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -29,15 +30,25 @@ func usage() {
 	os.Exit(2)
 }
 
-const usageDoc = `Find Go packages via pkg.go.dev.
-usage:
-        gofind [<flag> ...] <query> ...
+const usageDoc = `Find Go modules via pkg.go.dev.
 
-Flags
-        -raw   don't apply any formatting if set
+Usage:
+    gofind [-a] [-raw] query ...
+
+Flags:
+    -a     load all search results if set, not just the first 10 results
+    -raw   don't apply any formatting if set
+
+Examples:
+    gofind logging
+    gofind -a logging
+    gofind go cloud        # Search for multiple terms
+    gofind "go cloud"      # Search for an exact match
+    gofind yaml OR json    # Combine searches
 `
 
 func main() {
+	allFlag := flag.Bool("a", false, "load all search results, not just the first 10 results")
 	rawFlag := flag.Bool("raw", false, "don't apply any formatting")
 
 	flag.Usage = usage
@@ -54,11 +65,11 @@ func main() {
 	}
 	query := strings.Join(args, " ")
 
-	run(query, *rawFlag)
+	run(query, *allFlag, *rawFlag)
 }
 
-func run(query string, raw bool) {
-	modules, err := search(query)
+func run(query string, all, raw bool) {
+	modules, err := search(query, all)
 	check(err)
 	for _, mod := range modules {
 		if raw {
@@ -69,42 +80,66 @@ func run(query string, raw bool) {
 	}
 }
 
-func search(query string) ([]searchResult, error) {
+func search(query string, all bool) (sr []searchResult, err error) {
+	lastPage := 1
+	for page := 1; page <= lastPage; page++ {
+		var psr []searchResult
+		psr, lastPage, err = searchPage(query, page)
+		if err != nil {
+			return sr, err
+		}
+		if !all {
+			lastPage = 1
+		}
+		sr = append(sr, psr...)
+	}
+	return sr, err
+}
+
+func searchPage(query string, page int) (sr []searchResult, lastPage int, err error) {
 	v := url.Values{}
 	v.Set("q", query)
+	v.Set("page", strconv.Itoa(page))
 	req, err := http.NewRequest("GET", "https://pkg.go.dev/search?"+v.Encode(), nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	req.Header.Add("Accept", "text/html")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status code error: %d %s", res.StatusCode, res.Status)
+		return nil, 0, fmt.Errorf("HTTP status code error: %d %sr", res.StatusCode, res.Status)
 	}
 
 	htmlDoc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var results []searchResult
+	return scrapeSearchResults(htmlDoc)
+}
+
+func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, lastPage int, err error) {
 	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
 		moduleName := strings.TrimSpace(s.Find(".SearchSnippet-header").Text())
 		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
 		info := formatInfo(s.Find(".SearchSnippet-infoLabel").Text())
-		results = append(results, searchResult{
+		sr = append(sr, searchResult{
 			moduleName: moduleName,
 			synopsis:   synopsis,
 			info:       info,
 		})
 	})
-	return results, nil
+	lastPageStr := strings.TrimSpace(htmlDoc.Find(".Pagination-number").Last().Text())
+	if lastPageStr != "" {
+		lastPage, err = strconv.Atoi(lastPageStr)
+	}
+	return sr, lastPage, err
 }
 
 func formatInfo(info string) string {

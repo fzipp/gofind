@@ -11,7 +11,11 @@ go get github.com/fzipp/gofind
 ## Usage
 
 ```
-gofind [<flag> ...] <query> ...
+gofind [-a] [-raw] query ...
+
+Flags:
+    -a     load all search results if set, not just the first 10 results
+    -raw   don't apply any formatting if set
 ```
 
 ## Examples
