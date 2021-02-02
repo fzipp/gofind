@@ -1,5 +1,9 @@
 # gofind
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/fzipp/gofind)](https://pkg.go.dev/github.com/fzipp/gofind)
+![Build Status](https://github.com/fzipp/gofind/workflows/build/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fzipp/gofind)](https://goreportcard.com/report/github.com/fzipp/gofind)
+
 Gofind searches for Go modules via [pkg.go.dev](https://pkg.go.dev).
 
 ## Installation
