@@ -174,9 +174,11 @@ func (s searchResult) writeTo(w io.Writer) error {
 	if s.synopsis != "" {
 		doc.ToText(w, s.synopsis, indent, "", punchCardWidth-2*len(indent))
 	}
-	_, err = fmt.Fprintln(w)
-	_, err = fmt.Fprintln(w, indent+s.info)
-	_, err = fmt.Fprintln(w)
+	s.info = strings.ReplaceAll(s.info, "Version: ", "")
+	s.info = strings.ReplaceAll(s.info, "Published: ", "")
+	s.info = strings.ReplaceAll(s.info, "License: ", "")
+	s.info = strings.ReplaceAll(s.info, "Licenses: ", "")
+	_, err = fmt.Fprintf(w, "\n%s%s\n\n", indent, s.info)
 	return err
 }
 
