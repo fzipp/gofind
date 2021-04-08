@@ -9,7 +9,7 @@ Gofind searches for Go modules via [pkg.go.dev](https://pkg.go.dev).
 ## Installation
 
 ```
-go get github.com/fzipp/gofind
+go install github.com/fzipp/gofind@latest
 ```
 
 ## Usage
