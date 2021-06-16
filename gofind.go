@@ -125,8 +125,8 @@ func searchPage(query string, page int) (sr []searchResult, lastPage int, err er
 }
 
 func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, lastPage int, err error) {
-	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
-		moduleName := strings.TrimSpace(s.Find(".SearchSnippet-header").Text())
+	htmlDoc.Find(".LegacySearchSnippet").Each(func(i int, s *goquery.Selection) {
+		moduleName := strings.TrimSpace(s.Find(".LegacySearchSnippet-header").Text())
 		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
 		info := formatInfo(s.Find(".SearchSnippet-infoLabel").Text())
 		sr = append(sr, searchResult{
