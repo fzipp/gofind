@@ -118,9 +118,9 @@ func searchLimited(query string, limit int) ([]searchResult, error) {
 
 func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, err error) {
 	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
-		headerNameSel := s.Find(".SearchSnippet-header-name")
-		moduleName := strings.TrimSpace(headerNameSel.Text())
-		modulePath := strings.TrimSpace(headerNameSel.Parent().Contents().Last().Text())
+		header := s.Find(".SearchSnippet-headerContainer").Text()
+		moduleName := strings.TrimSpace(header[:strings.Index(header, "(")])
+		modulePath := trimParens(strings.TrimSpace(s.Find(".SearchSnippet-header-path").Text()))
 		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
 		info := formatInfo(s.Find(".SearchSnippet-infoLabel").Text())
 		sr = append(sr, searchResult{
@@ -131,6 +131,10 @@ func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, err erro
 		})
 	})
 	return sr, err
+}
+
+func trimParens(s string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(s, "("), ")")
 }
 
 func formatInfo(info string) string {
@@ -154,7 +158,7 @@ const (
 )
 
 func (s searchResult) writeTo(w io.Writer) error {
-	_, err := fmt.Fprintf(w, "%s - %s\n", s.moduleName, s.modulePath)
+	_, err := fmt.Fprintf(w, "%s (%s)\n", s.moduleName, s.modulePath)
 	if err != nil {
 		return err
 	}
