@@ -28,22 +28,21 @@ Search for packages providing logging functionality:
 
 ```
 $ gofind logging
-log
+log (log)
     Package log implements a simple logging package.
 
-    Version: go1.15.6 | Published: Dec  3, 2020 | Imported by: 203356 | License: BSD-3-Clause
+    Imported by 369,051 | go1.17.3 published on 5 days ago | BSD-3-Clause
 
-github.com/sirupsen/logrus
+logrus (github.com/sirupsen/logrus)
     Package logrus is a structured logger for Go, completely API compatible
     with the standard library logger.
 
-    Version: v1.7.0 | Published: May 28, 2020 | Imported by: 46315 | License: MIT
+    Imported by 75,868 | v1.8.1 published on Mar  9, 2021 | MIT
 
-github.com/ethereum/go-ethereum/log
-    Package log15 provides an opinionated, simple toolkit for best-practice
-    logging that is both human and machine readable.
+log (github.com/go-kit/kit/log)
+    Package log provides a structured logger.
 
-    Version: v1.9.25 | Published: Dec 11, 2020 | Imported by: 8625 | Licenses: Apache-2.0, GPL-3.0
+    Imported by 5,625 | v0.12.0 published on Sep 18, 2021 | MIT
 ...
 ```
 
