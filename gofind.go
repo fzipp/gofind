@@ -26,7 +26,7 @@ import (
 )
 
 func usage() {
-	_, _ = fmt.Fprintf(os.Stderr, usageDoc)
+	_, _ = fmt.Fprint(os.Stderr, usageDoc)
 	os.Exit(2)
 }
 
@@ -73,90 +73,81 @@ func run(query string, all, raw bool) {
 	check(err)
 	for _, mod := range modules {
 		if raw {
-			fmt.Println(mod.moduleName + "\t" + mod.synopsis + "\t" + mod.info)
+			fmt.Println(mod.modulePath + "\t" + mod.synopsis + "\t" + mod.info)
 			continue
 		}
 		check(mod.writeTo(os.Stdout))
 	}
 }
 
-func search(query string, all bool) (sr []searchResult, err error) {
-	lastPage := 1
-	for page := 1; page <= lastPage; page++ {
-		var psr []searchResult
-		psr, lastPage, err = searchPage(query, page)
-		if err != nil {
-			return sr, err
-		}
-		if !all {
-			lastPage = 1
-		}
-		sr = append(sr, psr...)
+func search(query string, all bool) ([]searchResult, error) {
+	limit := 10
+	if all {
+		limit = 100
 	}
-	return sr, err
+	return searchLimited(query, limit)
 }
 
-func searchPage(query string, page int) (sr []searchResult, lastPage int, err error) {
+func searchLimited(query string, limit int) ([]searchResult, error) {
 	v := url.Values{}
 	v.Set("q", query)
-	v.Set("page", strconv.Itoa(page))
+	v.Set("limit", strconv.Itoa(limit))
 	req, err := http.NewRequest("GET", "https://pkg.go.dev/search?"+v.Encode(), nil)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	req.Header.Add("Accept", "text/html")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		return nil, 0, fmt.Errorf("HTTP status code error: %d %sr", res.StatusCode, res.Status)
+		return nil, fmt.Errorf("HTTP status code error: %d %sr", res.StatusCode, res.Status)
 	}
 
 	htmlDoc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	return scrapeSearchResults(htmlDoc)
 }
 
-func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, lastPage int, err error) {
-	htmlDoc.Find(".LegacySearchSnippet").Each(func(i int, s *goquery.Selection) {
-		moduleName := strings.TrimSpace(s.Find(".LegacySearchSnippet-header").Text())
+func scrapeSearchResults(htmlDoc *goquery.Document) (sr []searchResult, err error) {
+	htmlDoc.Find(".SearchSnippet").Each(func(i int, s *goquery.Selection) {
+		header := s.Find(".SearchSnippet-headerContainer").Text()
+		moduleName := strings.TrimSpace(header[:strings.Index(header, "(")])
+		modulePath := trimParens(strings.TrimSpace(s.Find(".SearchSnippet-header-path").Text()))
 		synopsis := strings.TrimSpace(s.Find(".SearchSnippet-synopsis").Text())
 		info := formatInfo(s.Find(".SearchSnippet-infoLabel").Text())
 		sr = append(sr, searchResult{
 			moduleName: moduleName,
+			modulePath: modulePath,
 			synopsis:   synopsis,
 			info:       info,
 		})
 	})
-	lastPageStr := strings.TrimSpace(htmlDoc.Find(".Pagination-number").Last().Text())
-	if lastPageStr != "" {
-		lastPage, err = strconv.Atoi(lastPageStr)
-	}
-	return sr, lastPage, err
+	return sr, err
+}
+
+func trimParens(s string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(s, "("), ")")
 }
 
 func formatInfo(info string) string {
 	var parts []string
 	for _, p := range strings.Split(info, "|") {
-		s := strings.SplitN(p, ":", 2)
-		if len(s) > 1 {
-			label := strings.TrimSpace(s[0])
-			value := strings.TrimSpace(s[1])
-			parts = append(parts, label+": "+value)
-		}
+		parts = append(parts, strings.TrimSpace(p))
 	}
 	return strings.Join(parts, " | ")
 }
 
 type searchResult struct {
 	moduleName string
+	modulePath string
 	synopsis   string
 	info       string
 }
@@ -167,17 +158,13 @@ const (
 )
 
 func (s searchResult) writeTo(w io.Writer) error {
-	_, err := fmt.Fprintln(w, s.moduleName)
+	_, err := fmt.Fprintf(w, "%s (%s)\n", s.moduleName, s.modulePath)
 	if err != nil {
 		return err
 	}
 	if s.synopsis != "" {
 		doc.ToText(w, s.synopsis, indent, "", punchCardWidth-2*len(indent))
 	}
-	s.info = strings.ReplaceAll(s.info, "Version: ", "")
-	s.info = strings.ReplaceAll(s.info, "Published: ", "")
-	s.info = strings.ReplaceAll(s.info, "License: ", "")
-	s.info = strings.ReplaceAll(s.info, "Licenses: ", "")
 	_, err = fmt.Fprintf(w, "\n%s%s\n\n", indent, s.info)
 	return err
 }
