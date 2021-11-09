@@ -92,7 +92,7 @@ func searchLimited(query string, limit int) ([]searchResult, error) {
 	v := url.Values{}
 	v.Set("q", query)
 	v.Set("limit", strconv.Itoa(limit))
-	req, err := http.NewRequest("GET", "https://beta.pkg.go.dev/search?"+v.Encode(), nil)
+	req, err := http.NewRequest("GET", "https://pkg.go.dev/search?"+v.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}
