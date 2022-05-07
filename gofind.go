@@ -5,10 +5,12 @@
 // Gofind searches for Go packages via pkg.go.dev.
 //
 // Usage:
-//      gofind [<flag> ...] <query> ...
+//
+//	gofind [<flag> ...] <query> ...
 //
 // Flags
-//      -raw   don't apply any formatting if set
+//
+//	-raw   don't apply any formatting if set
 package main
 
 import (
