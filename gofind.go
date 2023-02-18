@@ -6,11 +6,20 @@
 //
 // Usage:
 //
-//	gofind [<flag> ...] <query> ...
+//	gofind [-a] [-raw] query ...
 //
-// Flags
+// Flags:
 //
+//	-a     load all search results if set, not just the first 10 results
 //	-raw   don't apply any formatting if set
+//
+// Examples:
+//
+//	gofind logging
+//	gofind -a logging
+//	gofind go cloud        # Search for multiple terms
+//	gofind "go cloud"      # Search for an exact match
+//	gofind yaml OR json    # Combine searches
 package main
 
 import (
