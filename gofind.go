@@ -6,12 +6,11 @@
 //
 // Usage:
 //
-//	gofind [-a] [-raw] query ...
+//	gofind [-a] query ...
 //
 // Flags:
 //
-//	-a     load all search results if set, not just the first 10 results
-//	-raw   don't apply any formatting if set
+//	-a  load all search results if set, not just the first 10 results
 //
 // Examples:
 //
@@ -44,11 +43,10 @@ func usage() {
 const usageDoc = `Find Go modules via pkg.go.dev.
 
 Usage:
-    gofind [-a] [-raw] query ...
+    gofind [-a] query ...
 
 Flags:
-    -a     load all search results if set, not just the first 10 results
-    -raw   don't apply any formatting if set
+    -a  load all search results if set, not just the first 10 results
 
 Examples:
     gofind logging
@@ -60,7 +58,6 @@ Examples:
 
 func main() {
 	allFlag := flag.Bool("a", false, "load all search results, not just the first 10 results")
-	rawFlag := flag.Bool("raw", false, "don't apply any formatting")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -76,17 +73,13 @@ func main() {
 	}
 	query := strings.Join(args, " ")
 
-	run(query, *allFlag, *rawFlag)
+	run(query, *allFlag)
 }
 
-func run(query string, all, raw bool) {
+func run(query string, all bool) {
 	modules, err := search(query, all)
 	check(err)
 	for _, mod := range modules {
-		if raw {
-			fmt.Println(mod.modulePath + "\t" + mod.synopsis + "\t" + mod.info)
-			continue
-		}
 		check(mod.writeTo(os.Stdout))
 	}
 }
