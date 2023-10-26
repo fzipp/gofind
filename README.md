@@ -4,7 +4,11 @@
 ![Build Status](https://github.com/fzipp/gofind/workflows/build/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fzipp/gofind)](https://goreportcard.com/report/github.com/fzipp/gofind)
 
-Gofind searches for Go modules via [pkg.go.dev](https://pkg.go.dev).
+Gofind conveniently searches for Go modules
+from the command line
+and lists them there
+without the need to visit [pkg.go.dev](https://pkg.go.dev)
+through a web browser.
 
 ## Installation
 
@@ -15,11 +19,10 @@ go install github.com/fzipp/gofind@latest
 ## Usage
 
 ```
-gofind [-a] [-raw] query ...
+gofind [-a] query ...
 
 Flags:
     -a     load all search results if set, not just the first 10 results
-    -raw   don't apply any formatting if set
 ```
 
 ## Examples
@@ -66,9 +69,11 @@ $ gofind yaml OR json
 
 ### Tip
 
-In case you want automatic paging if the output doesn't fit on one screen,
+If you wish to enable automatic paging
+when the output doesn't fit on one screen,
 you can add the following function to your shell profile
-(e.g. ~/.bash_profile) on Unix or Linux systems:
+(e.g. ~/.bash_profile) 
+on Unix or Linux systems:
 
 ```
 # Automatically page gofind output if it doesn't fit on one screen.
