@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"go/doc"
+	"go/doc/comment"
 	"io"
 	"net/http"
 	"net/url"
@@ -167,10 +168,20 @@ func (s searchResult) writeTo(w io.Writer) error {
 		return err
 	}
 	if s.synopsis != "" {
-		doc.ToText(w, s.synopsis, indent, "", punchCardWidth-2*len(indent))
+		writeWrappedText(w, s.synopsis)
 	}
 	_, err = fmt.Fprintf(w, "\n%s%s\n\n", indent, s.info)
 	return err
+}
+
+func writeWrappedText(w io.Writer, text string) {
+	d := new(doc.Package).Parser().Parse(text)
+	pr := &comment.Printer{
+		TextPrefix:     indent,
+		TextCodePrefix: "",
+		TextWidth:      punchCardWidth - 2*len(indent),
+	}
+	_, _ = w.Write(pr.Text(d))
 }
 
 func check(err error) {
