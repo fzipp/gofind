@@ -144,7 +144,7 @@ func trimParens(s string) string {
 
 func formatInfo(info string) string {
 	var parts []string
-	for _, p := range strings.Split(info, "|") {
+	for p := range strings.SplitSeq(info, "|") {
 		parts = append(parts, strings.TrimSpace(p))
 	}
 	return strings.Join(parts, " | ")
