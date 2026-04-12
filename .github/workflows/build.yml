@@ -12,6 +12,6 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.x'
+          go-version: 'stable'
       - name: Run tests
         run: go test -cover ./...
